@@ -1,8 +1,13 @@
-const CACHE_NAME = 'tictactoe-lux-v1';
+const CACHE_NAME = 'tictactoe-lux-v3';
 const ASSETS = [
   './',
   './index.html',
-  './manifest.json'
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png',
+  './screenshot-1.jpg',
+  './screenshot-2.jpg',
+  './screenshot-3.jpg'
 ];
 
 self.addEventListener('install', (e) => {
