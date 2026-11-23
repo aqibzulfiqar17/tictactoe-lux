@@ -1398,8 +1398,13 @@
 
       <!-- Host View -->
       <div id="online-host-pane" class="flex flex-col items-center gap-3 py-2">
-        <div class="w-full px-3 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-xs text-emerald-300 font-bold flex items-center justify-center gap-1.5 text-center">
-          <span>🟢</span> YOU ARE HOSTING! Keep this screen open.
+        <div class="w-full px-3 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-xs text-emerald-300 font-bold flex flex-col items-center justify-center gap-1 text-center">
+          <div class="flex items-center gap-1.5 text-emerald-400 font-black">
+            <span>🟢</span> YOU ARE PLAYER 1 (HOST)
+          </div>
+          <div class="text-[11px] text-slate-300 font-medium">
+            Share code/link below. <span class="text-amber-300 font-bold">STAY ON THIS SCREEN!</span> Match starts automatically when your friend joins.
+          </div>
         </div>
         <p class="text-xs text-slate-400 text-center">Share this room code with your friend to play 1-on-1:</p>
         <div class="flex items-center gap-2 w-full justify-center">
@@ -1407,6 +1412,7 @@
             GEN-ROOM
           </div>
           <button onclick="copyHostCode()" class="px-3 py-2 rounded-xl bg-cyan-500/20 border border-cyan-500/40 text-xs font-bold text-white hover:border-cyan-400 active:scale-95 transition">📋 Copy</button>
+          <button onclick="generateNewHostCode()" title="Generate new room code" class="px-2.5 py-2 rounded-xl bg-slate-800 border border-slate-700 text-xs font-bold text-slate-300 hover:text-white active:scale-95 transition">🔄 New</button>
         </div>
 
         <!-- 1-Tap Viral Share Buttons (WhatsApp & Direct Link) -->
@@ -1440,15 +1446,23 @@
 
       <!-- Join View -->
       <div id="online-join-pane" class="hidden flex-col items-center gap-3 py-2">
-        <div class="w-full px-3 py-2 rounded-xl bg-cyan-500/15 border border-cyan-500/40 text-xs text-cyan-300 font-bold flex items-center justify-center gap-1.5 text-center">
-          <span>👉</span> GUEST JOIN: Enter the code your friend sent you!
+        <div class="w-full px-3 py-2 rounded-xl bg-cyan-500/15 border border-cyan-500/40 text-xs text-cyan-300 font-bold flex flex-col items-center justify-center gap-1 text-center">
+          <div class="flex items-center gap-1.5 text-[#00F0FF] font-black">
+            <span>🔵</span> YOU ARE PLAYER 2 (GUEST)
+          </div>
+          <div class="text-[11px] text-slate-300 font-medium">
+            Enter the code sent by Player 1 and tap JOIN below:
+          </div>
         </div>
-        <p class="text-xs text-slate-300 text-center">Enter your friend's 6-character room code:</p>
+        <p class="text-xs text-slate-300 text-center">Enter your friend's 4-digit code:</p>
         <input id="input-join-code" type="text" placeholder="LUX-XXXX" maxlength="12" class="w-full text-center px-4 py-2.5 rounded-xl bg-slate-900 border-2 border-slate-700 text-lg font-mono font-black text-[#00F0FF] tracking-widest uppercase focus:border-cyan-400 focus:outline-none" />
         <button id="btn-join-match" onclick="joinOnlineMatch()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#00F0FF] to-[#FF007F] text-black font-black text-xs tracking-wider shadow-lg hover:opacity-90 active:scale-95 transition cursor-pointer">
           JOIN MATCH NOW ▶
         </button>
         <p id="join-error" class="hidden text-xs text-rose-400 font-semibold text-center"></p>
+        <div id="join-host-warning" class="hidden p-2 rounded-xl bg-amber-500/15 border border-amber-500/40 text-[10px] text-amber-300 text-center leading-relaxed font-bold">
+          ⚠️ Note: You are currently hosting room <span id="join-warning-host-id" class="text-white underline"></span>. If you want your friend to join you, switch back to "HOST A MATCH"!
+        </div>
         <div class="p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-[10px] text-slate-300 text-center leading-relaxed">
           <span class="text-cyan-400 font-bold block mb-0.5">💡 How 2-Player P2P Works:</span>
           Player 1 must keep their <strong class="text-white">"HOST A MATCH"</strong> window open while Player 2 joins from a <strong class="text-[#00F0FF]">second window, phone, or friend's device</strong>!
@@ -2224,8 +2238,18 @@
         const urlParams = new URLSearchParams(window.location.search);
         const joinCode = urlParams.get('join');
         if (joinCode) {
+          if (loaderInterval) {
+            clearInterval(loaderInterval);
+            loaderInterval = null;
+          }
+          const launchEl = document.getElementById('view-launch');
+          if (launchEl) launchEl.classList.add('hidden');
+          const setupEl = document.getElementById('view-setup');
+          if (setupEl) {
+            setupEl.classList.remove('hidden');
+            setupEl.classList.add('flex');
+          }
           setTimeout(() => {
-            if (typeof showSetupView === 'function') showSetupView();
             try { playTone(620, 'triangle', 0.09, 0.22); } catch(e){}
             document.getElementById('modal-online').classList.remove('hidden');
             switchOnlineTab('join');
@@ -2234,9 +2258,9 @@
               input.value = joinCode.toUpperCase().trim();
               setTimeout(() => {
                 joinOnlineMatch();
-              }, 600);
+              }, 400);
             }
-          }, 1000);
+          }, 350);
         }
       } catch (e) {}
     }
@@ -3368,17 +3392,26 @@
       const joinTab = document.getElementById('tab-join');
       const hostPane = document.getElementById('online-host-pane');
       const joinPane = document.getElementById('online-join-pane');
+      const hostWarn = document.getElementById('join-host-warning');
+      const warnCode = document.getElementById('join-warning-host-id');
 
       if (tab === 'host') {
         hostTab.className = 'flex-1 py-1.5 rounded-lg font-bold text-center bg-cyan-500/20 text-[#00F0FF] border border-cyan-500/40';
         joinTab.className = 'flex-1 py-1.5 rounded-lg font-semibold text-center text-slate-400';
         hostPane.classList.remove('hidden');
         joinPane.classList.add('hidden');
+        if (hostWarn) hostWarn.classList.add('hidden');
       } else {
         joinTab.className = 'flex-1 py-1.5 rounded-lg font-bold text-center bg-cyan-500/20 text-[#00F0FF] border border-cyan-500/40';
         hostTab.className = 'flex-1 py-1.5 rounded-lg font-semibold text-center text-slate-400';
         joinPane.classList.remove('hidden');
         hostPane.classList.add('hidden');
+        if (hostWarn && onlineRoomId && peer && peer.open) {
+          if (warnCode) warnCode.innerText = onlineRoomId;
+          hostWarn.classList.remove('hidden');
+        } else if (hostWarn) {
+          hostWarn.classList.add('hidden');
+        }
       }
     }
 
@@ -3398,6 +3431,7 @@
           { urls: 'stun:stun.l.google.com:19302' },
           { urls: 'stun:stun1.l.google.com:19302' },
           { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun3.l.google.com:19302' },
           { urls: 'stun:stun.cloudflare.com:3478' },
           { urls: 'stun:openrelay.metered.ca:80' },
           {
@@ -3435,22 +3469,28 @@
 
         if (err.type === 'peer-unavailable') {
           if (joinErr) {
-            joinErr.innerText = 'Room not found! Ensure Host screen is active on friend\'s device.';
-            joinErr.className = 'text-xs text-rose-400 font-mono text-center block font-bold';
+            joinErr.innerText = 'Room not found! Ensure Player 1 is on the HOST screen with this code.';
+            joinErr.className = 'text-xs text-rose-400 font-mono text-center block font-bold leading-relaxed';
             joinErr.classList.remove('hidden');
           }
         } else if (err.type === 'unavailable-id') {
           onlineRoomId = generateRoomCode();
+          try { sessionStorage.setItem('lux_host_room_code', onlineRoomId); } catch(e){}
           initHostPeer();
         } else if (err.type === 'network' || err.type === 'server-error' || err.type === 'socket-error') {
           if (joinErr) {
-            joinErr.innerText = 'Cloud signaling reconnecting. Tap JOIN again in 2s.';
+            joinErr.innerText = 'Connecting to signaling cloud... Auto-reconnecting in 2s.';
             joinErr.className = 'text-xs text-amber-400 font-mono text-center block font-bold';
             joinErr.classList.remove('hidden');
           }
           if (statusInd) {
             statusInd.className = 'flex items-center gap-2 text-xs text-amber-400 mt-1';
             statusInd.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400"></span><span>Re-syncing cloud...</span>';
+          }
+          if (peer && !peer.destroyed && peer.disconnected) {
+            setTimeout(() => {
+              try { peer.reconnect(); } catch(e){}
+            }, 1800);
           }
         } else {
           if (joinErr) {
@@ -3466,8 +3506,16 @@
       const codeLabel = document.getElementById('host-room-code');
       const statusInd = document.getElementById('host-status-indicator');
 
+      if (!onlineRoomId) {
+        try {
+          onlineRoomId = sessionStorage.getItem('lux_host_room_code') || generateRoomCode();
+          sessionStorage.setItem('lux_host_room_code', onlineRoomId);
+        } catch(e) {
+          onlineRoomId = generateRoomCode();
+        }
+      }
+
       // If we already have a healthy host peer with an existing room code, REUSE IT!
-      // Do NOT destroy the room code or disconnect the socket!
       if (peer && !peer.destroyed && onlineRoomId) {
         if (codeLabel) codeLabel.innerText = onlineRoomId;
         if (peer.open) {
@@ -3495,9 +3543,6 @@
         peer = null;
       }
 
-      if (!onlineRoomId) {
-        onlineRoomId = generateRoomCode();
-      }
       if (codeLabel) codeLabel.innerText = onlineRoomId;
       if (statusInd) {
         statusInd.className = 'flex items-center gap-2 text-xs text-amber-400 animate-pulse mt-1';
@@ -3509,6 +3554,7 @@
         attachPeerErrorHandling(peer);
         peer.on('open', (id) => {
           onlineRoomId = id;
+          try { sessionStorage.setItem('lux_host_room_code', id); } catch(e){}
           if (codeLabel) codeLabel.innerText = id;
           if (statusInd) {
             statusInd.className = 'flex items-center gap-2 text-xs text-emerald-400 mt-1';
@@ -3523,6 +3569,46 @@
         console.error(e);
       }
     }
+
+    function generateNewHostCode() {
+      initAudio();
+      triggerHaptic(20);
+      try {
+        if (peerConn) { try { peerConn.close(); } catch(e){} peerConn = null; }
+        if (peer) { try { peer.destroy(); } catch(e){} peer = null; }
+        onlineRoomId = generateRoomCode();
+        try { sessionStorage.setItem('lux_host_room_code', onlineRoomId); } catch(e){}
+        initHostPeer();
+        showToastNotification('🔄 New room code generated: ' + onlineRoomId);
+      } catch(e) {
+        console.error(e);
+      }
+    }
+
+    // Auto-reconnect when user switches back from WhatsApp/background
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && peer && !peer.destroyed) {
+        if (peer.disconnected) {
+          try {
+            peer.reconnect();
+            const statusInd = document.getElementById('host-status-indicator');
+            if (statusInd) {
+              statusInd.className = 'flex items-center gap-2 text-xs text-amber-400 animate-pulse mt-1';
+              statusInd.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400"></span><span>Re-syncing cloud room...</span>';
+            }
+          } catch(e){}
+        }
+      }
+    });
+
+    // Mobile carrier keep-alive heartbeat every 12 seconds
+    setInterval(() => {
+      try {
+        if (peer && !peer.destroyed && peer.open && peer.socket && peer.socket._ws && peer.socket._ws.readyState === 1) {
+          peer.socket._ws.send(JSON.stringify({ type: 'HEARTBEAT' }));
+        }
+      } catch(e) {}
+    }, 12000);
 
     function copyHostCode() {
       initAudio();
@@ -3579,14 +3665,33 @@
       }
 
       if (joinAttemptTimer) clearTimeout(joinAttemptTimer);
+      let joinSecondsLeft = 25;
+      const updateJoinProgress = () => {
+        if (joinErr && !document.getElementById('view-game').classList.contains('flex')) {
+          joinErr.innerText = `Connecting to room ${rawInput}... (${joinSecondsLeft}s)`;
+          joinErr.className = 'text-xs text-cyan-400 font-mono text-center block animate-pulse';
+          joinErr.classList.remove('hidden');
+        }
+      };
+      updateJoinProgress();
+      const countdownInterval = setInterval(() => {
+        joinSecondsLeft--;
+        if (joinSecondsLeft > 0) {
+          updateJoinProgress();
+        } else {
+          clearInterval(countdownInterval);
+        }
+      }, 1000);
+
       joinAttemptTimer = setTimeout(() => {
+        clearInterval(countdownInterval);
         resetJoinBtn();
         if (joinErr && !document.getElementById('view-game').classList.contains('flex')) {
-          joinErr.innerText = 'Room not found! Ensure Host screen is open on 2nd device/tab.';
+          joinErr.innerText = 'Connection timed out. Ensure Host has the game open and retry.';
           joinErr.className = 'text-xs text-rose-400 font-mono text-center block font-bold';
           joinErr.classList.remove('hidden');
         }
-      }, 9000);
+      }, 25000);
 
       const doConnect = () => {
         try {
