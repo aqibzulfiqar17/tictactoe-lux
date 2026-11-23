@@ -1398,6 +1398,9 @@
 
       <!-- Host View -->
       <div id="online-host-pane" class="flex flex-col items-center gap-3 py-2">
+        <div class="w-full px-3 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-xs text-emerald-300 font-bold flex items-center justify-center gap-1.5 text-center">
+          <span>🟢</span> YOU ARE HOSTING! Keep this screen open.
+        </div>
         <p class="text-xs text-slate-400 text-center">Share this room code with your friend to play 1-on-1:</p>
         <div class="flex items-center gap-2 w-full justify-center">
           <div id="host-room-code" class="px-4 py-2 rounded-xl bg-slate-900 border-2 border-[#00F0FF] text-xl font-mono font-black text-[#00F0FF] tracking-widest shadow-[0_0_15px_rgba(0,240,255,0.3)]">
@@ -1437,6 +1440,9 @@
 
       <!-- Join View -->
       <div id="online-join-pane" class="hidden flex-col items-center gap-3 py-2">
+        <div class="w-full px-3 py-2 rounded-xl bg-cyan-500/15 border border-cyan-500/40 text-xs text-cyan-300 font-bold flex items-center justify-center gap-1.5 text-center">
+          <span>👉</span> GUEST JOIN: Enter the code your friend sent you!
+        </div>
         <p class="text-xs text-slate-300 text-center">Enter your friend's 6-character room code:</p>
         <input id="input-join-code" type="text" placeholder="LUX-XXXX" maxlength="12" class="w-full text-center px-4 py-2.5 rounded-xl bg-slate-900 border-2 border-slate-700 text-lg font-mono font-black text-[#00F0FF] tracking-widest uppercase focus:border-cyan-400 focus:outline-none" />
         <button id="btn-join-match" onclick="joinOnlineMatch()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#00F0FF] to-[#FF007F] text-black font-black text-xs tracking-wider shadow-lg hover:opacity-90 active:scale-95 transition cursor-pointer">
@@ -2220,16 +2226,17 @@
         if (joinCode) {
           setTimeout(() => {
             if (typeof showSetupView === 'function') showSetupView();
-            openOnlineLobby();
+            try { playTone(620, 'triangle', 0.09, 0.22); } catch(e){}
+            document.getElementById('modal-online').classList.remove('hidden');
             switchOnlineTab('join');
             const input = document.getElementById('input-join-code');
             if (input) {
               input.value = joinCode.toUpperCase().trim();
               setTimeout(() => {
                 joinOnlineMatch();
-              }, 400);
+              }, 600);
             }
-          }, 800);
+          }, 1000);
         }
       } catch (e) {}
     }
@@ -3392,7 +3399,22 @@
           { urls: 'stun:stun1.l.google.com:19302' },
           { urls: 'stun:stun2.l.google.com:19302' },
           { urls: 'stun:stun.cloudflare.com:3478' },
-          { urls: 'stun:global.stun.twilio.com:3478' }
+          { urls: 'stun:openrelay.metered.ca:80' },
+          {
+            urls: 'turn:openrelay.metered.ca:80',
+            username: 'openrelayproject',
+            credential: 'openrelayproject'
+          },
+          {
+            urls: 'turn:openrelay.metered.ca:443',
+            username: 'openrelayproject',
+            credential: 'openrelayproject'
+          },
+          {
+            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+            username: 'openrelayproject',
+            credential: 'openrelayproject'
+          }
         ]
       }
     };
