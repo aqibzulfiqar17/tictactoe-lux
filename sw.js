@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tictactoe-lux-v4';
+const CACHE_NAME = 'tictactoe-lux-v5';
 const ASSETS = [
   './',
   './index.html',

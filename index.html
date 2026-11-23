@@ -1460,9 +1460,6 @@
           JOIN MATCH NOW ▶
         </button>
         <p id="join-error" class="hidden text-xs text-rose-400 font-semibold text-center"></p>
-        <div id="join-host-warning" class="hidden p-2 rounded-xl bg-amber-500/15 border border-amber-500/40 text-[10px] text-amber-300 text-center leading-relaxed font-bold">
-          ⚠️ Note: You are currently hosting room <span id="join-warning-host-id" class="text-white underline"></span>. If you want your friend to join you, switch back to "HOST A MATCH"!
-        </div>
         <div class="p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-[10px] text-slate-300 text-center leading-relaxed">
           <span class="text-cyan-400 font-bold block mb-0.5">💡 How 2-Player P2P Works:</span>
           Player 1 must keep their <strong class="text-white">"HOST A MATCH"</strong> window open while Player 2 joins from a <strong class="text-[#00F0FF]">second window, phone, or friend's device</strong>!
@@ -3392,26 +3389,18 @@
       const joinTab = document.getElementById('tab-join');
       const hostPane = document.getElementById('online-host-pane');
       const joinPane = document.getElementById('online-join-pane');
-      const hostWarn = document.getElementById('join-host-warning');
-      const warnCode = document.getElementById('join-warning-host-id');
 
       if (tab === 'host') {
         hostTab.className = 'flex-1 py-1.5 rounded-lg font-bold text-center bg-cyan-500/20 text-[#00F0FF] border border-cyan-500/40';
         joinTab.className = 'flex-1 py-1.5 rounded-lg font-semibold text-center text-slate-400';
         hostPane.classList.remove('hidden');
         joinPane.classList.add('hidden');
-        if (hostWarn) hostWarn.classList.add('hidden');
+        initHostPeer();
       } else {
         joinTab.className = 'flex-1 py-1.5 rounded-lg font-bold text-center bg-cyan-500/20 text-[#00F0FF] border border-cyan-500/40';
         hostTab.className = 'flex-1 py-1.5 rounded-lg font-semibold text-center text-slate-400';
         joinPane.classList.remove('hidden');
         hostPane.classList.add('hidden');
-        if (hostWarn && onlineRoomId && peer && peer.open) {
-          if (warnCode) warnCode.innerText = onlineRoomId;
-          hostWarn.classList.remove('hidden');
-        } else if (hostWarn) {
-          hostWarn.classList.add('hidden');
-        }
       }
     }
 
@@ -3601,15 +3590,6 @@
       }
     });
 
-    // Mobile carrier keep-alive heartbeat every 12 seconds
-    setInterval(() => {
-      try {
-        if (peer && !peer.destroyed && peer.open && peer.socket && peer.socket._ws && peer.socket._ws.readyState === 1) {
-          peer.socket._ws.send(JSON.stringify({ type: 'HEARTBEAT' }));
-        }
-      } catch(e) {}
-    }, 12000);
-
     function copyHostCode() {
       initAudio();
       playTone(660, 'sine', 0.08, 0.2);
@@ -3707,16 +3687,13 @@
         }
       };
 
-      if (peer && !peer.destroyed) {
-        if (peer.open) {
-          doConnect();
-        } else if (peer.disconnected) {
-          try { peer.reconnect(); } catch(e){}
-          peer.once('open', () => { doConnect(); });
-        } else {
-          peer.once('open', () => { doConnect(); });
-        }
+      if (peer && !peer.destroyed && peer.open) {
+        doConnect();
       } else {
+        if (peer) {
+          try { peer.destroy(); } catch(e){}
+          peer = null;
+        }
         try {
           peer = new Peer(undefined, peerIceConfig);
           attachPeerErrorHandling(peer);
